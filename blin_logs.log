@@ -1,0 +1,20 @@
+code error: 0
+Dump was summoned in
+      file: <main.cpp>
+      function: <main>
+      line: <30>
+
+Current parametres:
+      struct: ctx[000000473cfff9f0]
+      bytecode: variable -> stack[0000018374c842b0]
+      regs: ctx -> regs[000000473cfff9f8]
+      func returnes: ctx -> func_rets[0000018374c85450]
+      
+      current ip: 0      current comand: 6 (IN)      bytecode size: 68
+
+Bytecode:
+[06] 0B  00  06  0B  01  06  0B  02  0C  10  0C  21  0C  32  00  0A  01  0A  01  0F  01  04  0A  00  0F  0A  02  0F  03  0B  03  0D  01  00  0A  01  03  0A  03  10  02  01  02  0A  00  0F  04  05  0D  01  00  0A  01  03  0A  03  10  03  01  02  0A  00  0F  04  05  0D  00 
+
+Registers:
+Ax: BEBE  |  Bx: BEBE  |  
+Cx: BEBE  |  Dx: BEBE  |  

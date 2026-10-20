@@ -1,0 +1,7 @@
+html
+*.exe
+.vscode
+.gitattributes
+*.bat
+*.sh
+*.json
