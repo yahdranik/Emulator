@@ -1,0 +1,28 @@
+
+Code: 0
+Dump was summoned in
+      file: <processor.cpp>
+      function: <main>
+      line: <32>
+
+Current parametres:
+      struct: ctx[0000005d98fff9a0]
+      bytecode: variable -> stack[000001d8ac7b3ea0]
+      regs: ctx -> regs[0000005d98fff9a8]
+      func returnes: ctx -> func_rets[000001d8ac7a2dc0]
+      
+      current ip: 0      current comand: 0A (PUSH)      bytecode size: 350301
+
+Bytecode:
+0000  0001  0002  0003  0004  0005  0006  0007  0008  0009  0010  0011  0012  0013  0014  0015  0016  0017  0018  0019  0020  0021  0022  0023  0024  0025  0026  0027  0028  0029  
+[0A]   00    00    00    00    00    00    59    40    51    00    00    00    00    00    00    2E    40    0A    00    00    20    13    21    E1    EF    41    54    00    00   
+
+Registers:
+Ax: BE  |  Bx: BE  |  
+Cx: BE  |  Dx: BE  |  
+Ex: BE  |  Fx: BE  |  
+Gx: BE  |  Hx: BE  |  
+Ix: BE  |  Jx: BE  |  
+Kx: BE  |  Lx: BE  |  
+Mx: BE  |  Nx: BE  |  
+Ox: BE  |  Px: BE  |  

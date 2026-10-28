@@ -3,20 +3,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-// TODO:  дамп
-//TODO: ошибки по типу, синтаксические, рантайм и тд
-// хранение в бинарном виде, листинг
-// сделать еще один хэдер для общих функций и констант транслятора и процессора
-
-// спросить: как писать скрипты на питоне и как ваще писать асм для графики
 int main()
 {
-    FILE* log =  fopen("TOOLS/blin_logs.log", "w");
+    FILE* log = fopen(LOG_FILE, "w");
     stack_t stack = {};
     stack_err_t res_stack_init = stack_initialise(&stack, 16);
     if (res_stack_init == STK_ERROR) {printf("Stack dont init\n"); return SPU_ERROR;}
 
-    ssize_t size = get_file_size("TESTS/bytecode.bin");
+    ssize_t size = get_file_size(BIN_FILE);
     if (size < 0) 
     {
         printf("file size is incorrect\n");
@@ -34,11 +28,10 @@ int main()
         fclose(log);
     }
 
-    get_bytecode("TESTS/bytecode.bin", &ctx);
-
+    get_bytecode(BIN_FILE, &ctx);
     SPU_DUMP(log, &ctx);
-
     processing_bytecode(&ctx, &stack);
+    
     ctx_destroy(&ctx);
     stack_destroy(&stack);
 
@@ -59,6 +52,9 @@ spu_error_t ctx_initialise(spu_ctx* ctx, int bytecode_size)
 
     ctx->func_rets = (stack_t*) calloc(1, sizeof(stack_t));
     if (ctx->func_rets == NULL) { ctx->error |= SPU_NOT_MEMORY; return SPU_ERROR; }
+
+    ctx->ram = (stack_elem_t*) calloc (RAM_SIZE, sizeof(stack_elem_t));
+    if (ctx->ram == NULL) { ctx->error |= SPU_NOT_MEMORY; return SPU_ERROR; }
 
     stack_err_t res_init = stack_initialise(ctx -> func_rets, bytecode_size);
     if (res_init == STK_ERROR) {ctx->error |= SPU_NOT_INIT; return SPU_ERROR;}
@@ -82,6 +78,9 @@ spu_error_t ctx_destroy(spu_ctx* ctx)
         free(ctx->func_rets);
         ctx->func_rets = NULL;
     }
+
+    free(ctx->ram);
+    ctx->ram = NULL;
 
     ctx->error = SPU_ALL_OK;
 
@@ -136,7 +135,7 @@ spu_error_t get_bytecode(const char* file_name, spu_ctx* ctx)
         ctx->bytecode_size = header.bytecode_size;
     }
 
-    int elem_reads = fread(ctx->bytecode, sizeof(uint8_t), ctx->bytecode_size, bin_code);
+    int elem_reads = (int) fread(ctx->bytecode, sizeof(uint8_t), ctx->bytecode_size, bin_code);
 
     fclose(bin_code);
     return SPU_SUCCESS;
@@ -146,7 +145,7 @@ spu_error_t processing_bytecode(spu_ctx* ctx, stack_t* stack)
 {
     int size = ctx->bytecode_size;
     int ip = 0;
-    spu_error_t (*comands[]) (spu_cmd_args*) = {hlt, push, add, sub, div, out, in, jump, call, ret, pop, mult, sqr, draw};
+    spu_error_t (*comands[]) (spu_cmd_args*) = {hlt, push, add, sub, div, out, in, jump, call, ret, pop, mult, sqr, print, draw};
 
     ctx->current_ip = ip;
 
@@ -176,45 +175,31 @@ spu_error_t processing_bytecode(spu_ctx* ctx, stack_t* stack)
 spu_error_t push(spu_cmd_args* args)
 {
     stack_elem_t arg_value = 0;
+    int reg = (int) args->raw_arg;
+    int adress = (int) args->raw_arg;
 
-    if ((args->mode & RAM_BYTE) == RAM_BYTE)
-    {
-        int adress = 0;
-        
-        if ((args->mode & REG_BYTE) == REG_BYTE)
-        {
-            int reg = (int) args->raw_arg;
-            if (reg < 0 || reg >= COUNT_REGS) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
-            adress = (int) args->ctx->regs[reg];
-        }
-
-        else 
-        {
-            adress = (int) args->raw_arg;
-        }
-
-        if (adress >= RAM_SIZE || adress < 0) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
-        
-        arg_value = (stack_elem_t) args->ctx->ram[adress];
-    }
-    
-    else if ((args->mode & CONST_BYTE) == CONST_BYTE)
+    if ((args->mode & CONST_BYTE) == CONST_BYTE)
     {
         arg_value = args->raw_arg;
     }
     
     else if ((args->mode & REG_BYTE) == REG_BYTE)
-    {
-        int reg = (int) args->raw_arg;
-        
+    { 
         if (reg < 0 || reg >= COUNT_REGS) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
         arg_value = args->ctx->regs[reg];
+        adress = (int) args->ctx->regs[reg];
     }
     
     else 
     {
         args->ctx->error |= SPU_INCORRECT_ARG;
         return SPU_ERROR;
+    }
+
+    if ((args->mode & RAM_BYTE) == RAM_BYTE) 
+    {
+        if (adress >= RAM_SIZE || adress < 0) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
+        arg_value = (stack_elem_t) args->ctx->ram[adress];
     }
 
     stack_err_t res_push = stack_push(args->stack, arg_value);
@@ -228,6 +213,7 @@ spu_error_t push(spu_cmd_args* args)
 spu_error_t pop(spu_cmd_args* args)
 {
     stack_elem_t arg_value = 0;
+    int reg = (int) args->raw_arg;
 
     if (stack_pop(args->stack, &arg_value) != STK_SUCCESS) 
     {
@@ -237,19 +223,13 @@ spu_error_t pop(spu_cmd_args* args)
 
     if ((args->mode & RAM_BYTE) == RAM_BYTE)
     {
-        int adress = 0;
+        int adress = (int) args->raw_arg;
 
         if ((args->mode & REG_BYTE) == REG_BYTE) 
         {
-            int reg = (int) args->raw_arg;
             if (reg < 0 || reg >= COUNT_REGS) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
             adress = (int) args->ctx->regs[reg];
         } 
-
-        else
-        {
-            adress = (int) args->raw_arg;
-        }
         
         if (adress >= RAM_SIZE || adress < 0) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
         
@@ -258,9 +238,7 @@ spu_error_t pop(spu_cmd_args* args)
 
     else if ((args->mode & REG_BYTE) == REG_BYTE)
     {
-        int reg = (int) args->raw_arg;
         if (reg < 0 || reg >= COUNT_REGS) { args->ctx->error |= SPU_INCORRECT_ARG; return SPU_ERROR; }
-
         args->ctx->regs[reg] = arg_value;
     }
 
@@ -360,8 +338,11 @@ spu_error_t sqr(spu_cmd_args* args)
     stack_err_t res_pop = stack_pop(args -> stack, &elem);
     if (res_pop != STK_SUCCESS) args->ctx->error |= SPU_POP_ERROR;
 
-    if (elem < 0) args->ctx->error |= SPU_SQRT_FROM_NEG;
-
+    if (elem < 0) 
+    {
+        args->ctx->error |= SPU_SQRT_FROM_NEG;
+        return SPU_ERROR;
+    }
     stack_err_t res_push = stack_push(args -> stack, sqrt(elem));
     if (res_push != STK_SUCCESS) args->ctx->error |= SPU_PUSH_ERROR;
 
@@ -469,8 +450,18 @@ spu_error_t ret(spu_cmd_args* args)
 
 spu_error_t hlt(spu_cmd_args* args)
 {
+    if (IsKeyDown(KEY_ESCAPE))
+    {
+        CloseWindow();
+        is_window_open = 0;
+    }
+
     printf("HLT summoned in %d comand\n", *(args -> ip));
 
+    FILE* ram_bin = fopen("ram.bin", "wb");
+    fwrite(args->ctx->ram, sizeof(stack_elem_t), RAM_SIZE, ram_bin);
+    fclose(ram_bin);
+    
     ctx_destroy(args->ctx);
     stack_destroy(args->stack);
 
@@ -478,12 +469,60 @@ spu_error_t hlt(spu_cmd_args* args)
     return SPU_SUCCESS;
 }
 
-spu_error_t draw(spu_cmd_args* args)
+spu_error_t print(spu_cmd_args* args)   //переделать. для текста сегмент констант в байт коде
 {
     for (int i = 0; i < RAM_SIZE; i++)
     {
         int c = (int) args->ctx->ram[i];
-        printf("%c", c);
+        putchar(c);
+    }
+
+    *(args->ip) += 1;
+    return SPU_SUCCESS;
+}
+
+spu_error_t draw(spu_cmd_args* args)
+{
+    if (is_window_open == 0)
+    {
+        InitWindow(screenWidth, screenHeight, "RAM");
+        SetTargetFPS(MAX_FPS);
+        is_window_open = 1;
+    }
+
+    float delay = 0.1f;
+    float timer = 0.0f;
+
+    while (!WindowShouldClose())
+    {
+        if (IsKeyDown(KEY_ESCAPE)) break;
+
+        timer += GetFrameTime();
+        if (timer >= delay)
+        {
+            break;
+        }
+
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
+        for (int y = 0; y < INIT_CELL; y++)
+        {
+            for (int x = 0; x < INIT_CELL; x++)
+            {
+                uint32_t value = (uint32_t) args->ctx->ram[y * INIT_CELL + x];
+                
+                Color color;
+                color.r = (uint8_t) ((value >> 0) & 0xFF);
+                color.g = (uint8_t) ((value >> 8) & 0xFF);
+                color.b = (uint8_t) ((value >> 16) & 0xFF);
+                color.a = (uint8_t) ((value >> 24) & 0xFF);
+
+                DrawRectangle(x * VISIB_CELL, y * VISIB_CELL, VISIB_CELL, VISIB_CELL, color);
+            }
+        }
+
+        EndDrawing();
     }
 
     *(args->ip) += 1;
@@ -515,7 +554,7 @@ void spu_dump(FILE* log, spu_ctx* ctx, const char* file_name, const char* func_n
                  "      current comand: %02X (%s)"
                  "      bytecode size: %d",
                  ctx, ctx->bytecode, ctx->regs, ctx->func_rets, safe_ip, 
-                 cur_cmd, CMD_NAME(cur_cmd >> 3), ctx->bytecode_size);
+                 cur_cmd, cmd_names[cur_cmd >> 3], ctx->bytecode_size);
 
     fflush(log);
     fprintf(log, "\n\nBytecode:\n");
@@ -545,9 +584,9 @@ void print_bytecode(FILE* log, const spu_ctx* ctx)
     }
 }
 
-void print_regs(FILE* log, const stack_elem_t* array, size_t size)
+void print_regs(FILE* log, const stack_elem_t* array, int size)
 {
-    for (size_t i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
     {
         fprintf(log, "%cx: %02X  |  ", 'A' + i, (int) array[i]);
         if (i % 2 != 0) fprintf(log, "\n");

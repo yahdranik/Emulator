@@ -11,9 +11,11 @@
 #define BC_SP "%lg"
 
 const int COUNT_REGS = 16;
-const int COUNT_CMDS = 14;
+const int COUNT_CMDS = 15;
 const int MAX_LEN    = 64;
 const int RAM_SIZE   = 1024;
+
+const char* cmd_names[] = {"HLT", "PUSH", "ADD", "SUB", "DIV", "OUT", "IN", "JUMP", "CALL", "RET", "POP", "MUL", "SQR", "PRIN", "DRAW"};
 
 // === MODES ===
 #define NO_ARG         0x00
@@ -73,13 +75,18 @@ enum spu_cmd_code_t
     CALL  = 0x08,
     RET   = 0x09,
     POP   = 0x0A,
-    MULT  = 0x0B,           // MUL
+    MUL   = 0x0B,
     SQR   = 0x0C,
-    DRAW  = 0x0D,
-    JNE   = 0x0E,
-    JE    = 0x0F
+    PRINT = 0x0D,
+    DRAW  = 0x0E,
 
-    // JA, JB, JAE, JBE
+// === PSEUDOCOMANDS ===
+    JNE   = 0x0F,
+    JE    = 0x10,
+    JA    = 0x11,
+    JB    = 0x12,
+    JAE   = 0x13,
+    JBE   = 0x14
 };
 
 struct spu_header_t
@@ -94,10 +101,11 @@ struct spu_ctx
     bytecode_t*    bytecode;
     stack_elem_t   regs[COUNT_REGS];
     stack_t*       func_rets;
-    stack_elem_t   ram[RAM_SIZE];
+    stack_elem_t*  ram;
 
     int            current_ip;
     int            bytecode_size;
+    size_t         label_count; 
     error_t        error;
 };
 
@@ -115,26 +123,6 @@ struct spu_label_t
     char name[MAX_LEN];
     int adress;
 };
-
-// === MACROS ===
-
-// const char cmd_names[] = {"HLT", "PUSH", ...}
-
-#define CMD_NAME(cmd) ((cmd) == HLT  ? "HLT"   :        \
-                       (cmd) == PUSH ? "PUSH"  :        \
-                       (cmd) == POP  ? "POP"   :        \
-                       (cmd) == OUT  ? "OUT"   :        \
-                       (cmd) == IN   ? "IN"    :        \
-                       (cmd) == DIV  ? "DIV"   :        \
-                       (cmd) == SUB  ? "SUB"   :        \
-                       (cmd) == ADD  ? "ADD"   :        \
-                       (cmd) == MULT ? "MULT"  :        \
-                       (cmd) == JUMP ? "JUMP"  :        \
-                       (cmd) == CALL ? "CALL"  :        \
-                       (cmd) == RET  ? "RET"   :        \
-                       (cmd) == DRAW ? "DRAW"  :        \
-                       (cmd) == SQR  ? "SQR"   : "UNKNOWN")
-
 
 spu_error_t ctx_initialise(spu_ctx* ctx, int bytecode_size);
 spu_error_t ctx_destroy(spu_ctx* ctx);

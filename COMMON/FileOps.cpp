@@ -1,6 +1,5 @@
 #include "StrOps.h"
 #include "FileOps.h"
-
 ssize_t get_file_size(const char* NAME)
 {
     struct stat file_info = {};
