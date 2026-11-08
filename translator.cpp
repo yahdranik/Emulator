@@ -101,8 +101,7 @@ spu_error_t translate_to_bytecode(FileData* source_info, spu_ctx* ctx, spu_label
             if (cmd[0] != '\0')
             {
                 bytecode_t converted = convert_one_comand(cmd);
-                if (!is_equal(converted, BYTECODE_INIT)) comand_processing_to_bytecode(ctx, arg, converted,
-                                                &ip, labels, source_info->count_of_strings);
+                if (!is_equal(converted, BYTECODE_INIT)) comand_processing_to_bytecode(ctx, arg, converted, &ip, labels);
             }
         }
 
@@ -115,7 +114,7 @@ spu_error_t translate_to_bytecode(FileData* source_info, spu_ctx* ctx, spu_label
     return SPU_SUCCESS;
 }
 
-spu_error_t comand_processing_to_bytecode(spu_ctx* ctx, char* arg, bytecode_t cmd, int* ip, spu_label_t* labels)
+spu_error_t comand_processing_to_bytecode(spu_ctx* ctx, char* arg, bytecode_t cmd, int* ip, spu_label_t* labels) //добавить пуш метки, джамп регистра, джамп точка
 {
     uint8_t mode = NO_ARG;
     stack_elem_t arg_value = 0.0;
@@ -230,14 +229,13 @@ int find_adress(spu_label_t* labels, size_t size, source_t label)
     while (left < right)
     {
         size_t middle = left + (right - left) / 2;
-        int    cmp = strcmp(label, labels[middle].name);
 
-        if (cmp < 0) 
+        if (strcmp(label, labels[middle].name) < 0) 
         {
             right = middle;
         }
 
-        else if (cmp > 0) 
+        else if (strcmp(label, labels[middle].name) > 0) 
         {
             left  = middle + 1;
         }

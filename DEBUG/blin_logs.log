@@ -6,10 +6,10 @@ Dump was summoned in
       line: <32>
 
 Current parametres:
-      struct: ctx[0000005d98fff9a0]
-      bytecode: variable -> stack[000001d8ac7b3ea0]
-      regs: ctx -> regs[0000005d98fff9a8]
-      func returnes: ctx -> func_rets[000001d8ac7a2dc0]
+      struct: ctx[000000fd855ff900]
+      bytecode: variable -> stack[00000268d1dd9cf0]
+      regs: ctx -> regs[000000fd855ff908]
+      func returnes: ctx -> func_rets[00000268d1dc91a0]
       
       current ip: 0      current comand: 0A (PUSH)      bytecode size: 350301
 

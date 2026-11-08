@@ -32,7 +32,7 @@ const size_t SIZE_WITHOUT_ARG = sizeof(uint8_t);
 
 // PROTOTYPES --------------------------------------------------------------------
 spu_error_t translate_to_bytecode(FileData* source_info, spu_ctx* ctx, spu_label_t* labels, int pass_number);
-spu_error_t comand_processing_to_bytecode(spu_ctx* ctx, char* arg, bytecode_t cmd, int* ip, spu_label_t* labels, size_t count_strings);
+spu_error_t comand_processing_to_bytecode(spu_ctx* ctx, char* arg, bytecode_t cmd, int* ip, spu_label_t* labels);
 bytecode_t convert_one_comand(source_t cmd);
 spu_error_t put_one_label(spu_label_t* labels, char* label, int ip, size_t* label_number);
 

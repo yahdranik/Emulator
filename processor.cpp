@@ -542,7 +542,7 @@ void spu_dump(FILE* log, spu_ctx* ctx, const char* file_name, const char* func_n
                  "      function: <%s>\n"      
                  "      line: <%d>\n", 
             file_name, func_name, line);
-
+    fflush(log);
     fprintf(log, "\nCurrent parametres:\n");
 
     fprintf(log, "      struct: ctx[%p]\n"
@@ -592,3 +592,4 @@ void print_regs(FILE* log, const stack_elem_t* array, int size)
         if (i % 2 != 0) fprintf(log, "\n");
     }
 }
+
